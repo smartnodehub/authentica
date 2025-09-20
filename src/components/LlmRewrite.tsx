@@ -3,12 +3,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+type RewriteResponse = {
+  rewritten?: string;
+  error?: string;
+};
 
 export function LlmRewrite({ source, lang }:{ source:string; lang:'en'|'fi'|'et' }) {
   const [available, setAvailable] = useState<boolean>(false);
   const [style, setStyle] = useState<'concise'|'neutral'|'friendly'|'formal'>('neutral');
   const [loading, setLoading] = useState(false);
-  const [out, setOut] = useState<string>('');
+  const [result, setResult] = useState<RewriteResponse | null>(null);
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
@@ -16,7 +20,7 @@ export function LlmRewrite({ source, lang }:{ source:string; lang:'en'|'fi'|'et'
   }, []);
 
   async function run() {
-    setLoading(true); setError(''); setOut('');
+    setLoading(true); setError(''); setResult(null);
     try {
       const r = await fetch('/api/llm/rewrite', {
         method: 'POST',
@@ -29,11 +33,11 @@ export function LlmRewrite({ source, lang }:{ source:string; lang:'en'|'fi'|'et'
         const txt = await r.text();
         setError(`Request failed: ${txt}`);
       } else {
-        const j = await r.json();
-        setOut(j.rewritten || '');
+        const data: RewriteResponse = await r.json();
+        setResult(data);
       }
-    } catch (e:any) {
-      setError(String(e?.message || e));
+    } catch (e: unknown) {
+      setError(String((e as Error)?.message || e));
     } finally {
       setLoading(false);
     }
@@ -74,13 +78,13 @@ export function LlmRewrite({ source, lang }:{ source:string; lang:'en'|'fi'|'et'
 
       {error && <p className="text-sm text-rose-400">{error}</p>}
 
-      {out && (
+      {result?.rewritten && (
         <div>
           <label className="text-sm text-slate-400">Result</label>
           <textarea
             className="mt-1 w-full min-h-[160px] rounded-xl bg-slate-950 border border-slate-700 p-3 text-slate-100"
-            value={out}
-            onChange={(e)=>setOut(e.target.value)}
+            value={result.rewritten}
+            onChange={(e)=>setResult({ ...result, rewritten: e.target.value })}
           />
         </div>
       )}
