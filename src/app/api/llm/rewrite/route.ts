@@ -74,7 +74,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Upstream error: ${err}` }, { status: 502 });
   }
 
-  const data = await resp.json() as any;
+  type OpenAIResponse = {
+    choices: { message?: { content?: string } }[];
+  };
+
+  const data = await resp.json() as OpenAIResponse;
   const rewritten = data?.choices?.[0]?.message?.content?.trim();
   if (!rewritten) {
     return NextResponse.json({ error: 'No content from model' }, { status: 502 });
