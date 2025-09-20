@@ -11,6 +11,7 @@ import { LanguageSwitch } from '@/components/LanguageSwitch';
 import { ScoreCard } from '@/components/ScoreCard';
 import { ClaimList } from '@/components/ClaimList';
 import { OverlapSummary } from '@/components/OverlapSummary';
+import { LlmRewrite } from '@/components/LlmRewrite';
 
 function ReportClient() {
   const params = useParams<{ id: string }>();
@@ -69,6 +70,8 @@ function ReportClient() {
           Words: {result.wordCount} • Sentences: {result.sentenceCount} • Reading ease: {result.readingEase}
         </p>
       </section>
+
+      <LlmRewrite source={original} lang={lang} />
 
       <div className="flex gap-3">
         <a href={`/analyze?lang=${lang}`} className="rounded-xl bg-indigo-500 px-5 py-3 font-medium hover:bg-indigo-600">
