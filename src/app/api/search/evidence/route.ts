@@ -1,0 +1,5 @@
+// API: /api/search/evidence
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
