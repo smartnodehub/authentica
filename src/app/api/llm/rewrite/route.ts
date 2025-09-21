@@ -1,3 +1,10 @@
+function readApiKey(): string | null {
+  const raw = (process.env.OPENAI_API_KEY ?? '').trim();
+  if (!raw) return null;
+  if (/\r|\n/.test(raw)) return null;   // keelab CR/LF sees
+  if (!/^sk-/.test(raw)) return null;   // peab algama sk-
+  return raw;
+}
 // Mapping: Project=Authentica | Repo=https://github.com/smartnodehub/authentica | Domain=https://authentica-gamma.vercel.app
 // File: src/app/api/llm/rewrite/route.ts
 import { NextRequest, NextResponse } from 'next/server';
@@ -9,9 +16,12 @@ type Body = { text: string; style?: 'concise'|'neutral'|'friendly'|'formal'; lan
 type OpenAIResponse = { choices: { message?: { content?: string } }[] };
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = readApiKey();
   if (!apiKey) {
-    return NextResponse.json({ error: 'OPENAI not configured' }, { status: 503 });
+    return NextResponse.json(
+      { error: 'OPENAI_API_KEY invalid or not configured (check Vercel Settings → Environment Variables)' },
+      { status: 503 }
+    );
   }
 
   let body: Body | undefined;
