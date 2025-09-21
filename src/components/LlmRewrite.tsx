@@ -2,25 +2,18 @@
 // File: src/components/LlmRewrite.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 type Tone = 'concise' | 'neutral' | 'friendly' | 'formal';
-type StatusJson = { openaiConfigured: boolean };
 type RewriteJson = { rewritten?: string; error?: string };
 
 export function LlmRewrite({ source, lang }: { source: string; lang: 'en' | 'fi' | 'et' }) {
-  const [available, setAvailable] = useState<boolean>(false);
   const [style, setStyle] = useState<Tone>('neutral');
   const [loading, setLoading] = useState(false);
   const [out, setOut] = useState<string>('');
   const [error, setError] = useState<string>('');
 
-  useEffect(() => {
-    fetch('/api/status')
-      .then((r) => r.json())
-      .then((j: StatusJson) => setAvailable(!!j.openaiConfigured))
-      .catch(() => setAvailable(false));
-  }, []);
+  // Removed unused 'available' state and related effect
 
   async function run() {
     setLoading(true);
@@ -70,44 +63,28 @@ export function LlmRewrite({ source, lang }: { source: string; lang: 'en' | 'fi'
             id="tone"
             value={style}
             onChange={onToneChange}
-            className="rounded-lg bg-slate-950 border border-slate-700 px-2 py-1 text-sm"
+            className="rounded border border-slate-700 bg-slate-800 text-slate-200 px-2 py-1 text-sm"
+            disabled={loading}
           >
-            <option value="neutral">Neutral</option>
             <option value="concise">Concise</option>
+            <option value="neutral">Neutral</option>
             <option value="friendly">Friendly</option>
             <option value="formal">Formal</option>
           </select>
-          <button
-            onClick={run}
-            disabled={!available || !source?.trim() || loading}
-            className="rounded-lg bg-indigo-500 px-3 py-2 text-sm font-medium hover:bg-indigo-600 disabled:opacity-50"
-            title={available ? '' : 'Add OPENAI_API_KEY in Vercel settings'}
-          >
-            {loading ? 'Working…' : 'Rewrite'}
-          </button>
         </div>
       </div>
-
-      {!available && (
-        <p className="text-xs text-amber-400">
-          Not configured: set <code>OPENAI_API_KEY</code> in Vercel → Project → Settings → Environment Variables.
-        </p>
+      <button
+        className="mt-2 px-4 py-2 rounded bg-blue-600 text-white disabled:bg-blue-900"
+        onClick={run}
+        disabled={loading}
+      >
+        {loading ? 'Rewriting...' : 'Rewrite'}
+      </button>
+      {error && (
+        <div className="mt-2 text-red-400 text-sm">{error}</div>
       )}
-
-      {error && <p className="text-sm text-rose-400">{error}</p>}
-
       {out && (
-        <div>
-          <label className="text-sm text-slate-400" htmlFor="rewrite-out">
-            Result
-          </label>
-          <textarea
-            id="rewrite-out"
-            className="mt-1 w-full min-h-[160px] rounded-xl bg-slate-950 border border-slate-700 p-3 text-slate-100"
-            value={out}
-            onChange={(e) => setOut(e.target.value)}
-          />
-        </div>
+        <div className="mt-2 p-2 bg-slate-800 rounded text-slate-100 whitespace-pre-line">{out}</div>
       )}
     </section>
   );
