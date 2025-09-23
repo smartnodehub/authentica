@@ -1,4 +1,3 @@
-
 'use client';
 // Mapping: Project=Authentica | Repo=https://github.com/smartnodehub/authentica | Domain=https://authentica-gamma.vercel.app
 // File: src/components/LlmRewrite.tsx
@@ -74,12 +73,7 @@ export function LlmRewrite({ source, lang }: { source: string; lang: Lang }) {
   }
 
   return (
-<<<<<<< HEAD
-    <div className="glow-text-green">
-      <section className="rounded-xl border border-slate-700 p-4 bg-slate-900 space-y-3">
-=======
     <section className="rounded-xl border border-slate-700 p-4 bg-slate-900 space-y-3">
->>>>>>> bad37e7dfe6b4f2598f52e103eeb498fe8e0d4b5
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">{t(lang, 'rewriteTitle')}</h2>
         <div className="flex items-center gap-2">
@@ -118,30 +112,17 @@ export function LlmRewrite({ source, lang }: { source: string; lang: Lang }) {
 
       {out && (
         <div>
-<<<<<<< HEAD
-          <label className="text-sm" htmlFor="rewrite-out">
-=======
           <label className="text-sm text-slate-400" htmlFor="rewrite-out">
->>>>>>> bad37e7dfe6b4f2598f52e103eeb498fe8e0d4b5
             {t(lang, 'result')}
           </label>
           <textarea
             id="rewrite-out"
-<<<<<<< HEAD
-            className="mt-1 w-full min-h-[160px] rounded-xl bg-slate-950 border border-slate-700 p-3"
-=======
             className="mt-1 w-full min-h-[160px] rounded-xl bg-slate-950 border border-slate-700 p-3 text-slate-100"
->>>>>>> bad37e7dfe6b4f2598f52e103eeb498fe8e0d4b5
             value={out}
             onChange={(e) => setOut(e.target.value)}
           />
         </div>
       )}
-<<<<<<< HEAD
-      </section>
-    </div>
-=======
     </section>
->>>>>>> bad37e7dfe6b4f2598f52e103eeb498fe8e0d4b5
   );
 }
