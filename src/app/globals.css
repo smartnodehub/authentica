@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* värvimuutujad ja layouti utilid */
+:root{
+  --bg-light:#ffffff; --bg-light-2:#F9FAFB;
+  --bg-dark:#0F0F0F;  --bg-dark-2:#1A1A1A;
+  --text-light:#111111; --text-dark:#ffffff;
+  --accent:#AFFF4F; --accent2:#9FFF00;
+  --nav-h:64px;
+}
+
+body{
+  background:linear-gradient(180deg,var(--bg-light) 0%,var(--bg-light-2) 100%);
+  color:var(--text-light);
+}
+html.dark body{
+  background:linear-gradient(180deg,var(--bg-dark) 0%,var(--bg-dark-2) 100%);
+  color:var(--text-dark);
+}
+
+/* sticky nav offset */
+.has-fixed-nav{ padding-top: var(--nav-h); }
+.section-offset{ scroll-margin-top: var(--nav-h); }
+
+/* kaardid ja nupud */
+.card{
+  @apply rounded-2xl border p-4;
+  background:#ffffff;
+  border-color:rgba(0,0,0,0.06);
+}
+html.dark .card{
+  background:#1A1A1A;
+  border:1px solid rgba(255,255,255,0.12);
+}
+
+.btn-primary{
+  @apply inline-flex items-center gap-2 rounded-xl px-5 py-3 font-semibold transition;
+  background:var(--accent2);
+  color:#111;
+  box-shadow:0 0 8px var(--accent), 0 0 16px var(--accent2);
+}
+.btn-primary:hover{ filter:brightness(.96); }
+
+/* numbrite pehme glow */
+.glow-number{
+  color:var(--accent2);
+  text-shadow:
+    0 0 3px rgba(159,255,0,.70),
+    0 0 6px rgba(159,255,0,.45),
+    0 0 10px rgba(159,255,0,.25);
+}
