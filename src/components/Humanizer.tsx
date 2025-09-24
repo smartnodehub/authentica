@@ -6,6 +6,13 @@ import Select from "./Select";
 type Tool = "humanizer" | "detector" | "research" | "plaglite";
 
 const TOOL_LABEL: Record<Tool, string> = {
+  humanizer: "Humanize",
+  detector: "Detect AI",
+  research: "Research",
+  plaglite: "Check Plagiarism",
+};
+
+const TOOL_BADGE: Record<Tool, string> = {
   humanizer: "Humanizer (OpenAI)",
   detector: "AI Detector (OpenAI)",
   research: "Research (Tavily + Brave)",
@@ -15,19 +22,22 @@ const TOOL_LABEL: Record<Tool, string> = {
 const WRITING_LEVELS = ["Beginner", "Intermediate", "Advanced"] as const;
 
 export default function Humanizer() {
-  // Nähtav valik (kuvatakse pillina); vaikimisi humanizer
+  // aktiivne tööriist
   const [selected, setSelected] = useState<Tool>("humanizer");
   const [level, setLevel] = useState<(typeof WRITING_LEVELS)[number]>("Intermediate");
 
+  // menüü
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const [openUp, setOpenUp] = useState(false);
 
+  // IO
   const [text, setText] = useState("");
   const [out, setOut] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  // väljasklõps ja ESC
   useEffect(() => {
     function onDocClick(e: MouseEvent) { if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false); }
     function onEsc(e: KeyboardEvent) { if (e.key === "Escape") setMenuOpen(false); }
@@ -36,19 +46,19 @@ export default function Humanizer() {
     return () => { document.removeEventListener("mousedown", onDocClick); document.removeEventListener("keydown", onEsc); };
   }, []);
 
+  // automaatne "flip" – kui all pole ruumi, ava menüü üles
   useEffect(() => {
     if (!menuOpen || !triggerRef.current) return;
-    const triggerRect = triggerRef.current.getBoundingClientRect();
-    const estimatedMenuH = 260; // px – meie menüü on ~220–300px; piisab otsustamiseks
-    const spaceBelow = window.innerHeight - triggerRect.bottom;
-    const spaceAbove = triggerRect.top;
-    // kui all pole ruumi, aga üleval on piisavalt → ava üles
-    setOpenUp(spaceBelow < estimatedMenuH && spaceAbove > spaceBelow);
+    const r = triggerRef.current.getBoundingClientRect();
+    const estimatedMenuH = 260;
+    const below = window.innerHeight - r.bottom;
+    const above = r.top;
+    setOpenUp(below < estimatedMenuH && above > below);
   }, [menuOpen]);
 
   const wordsUsed = useMemo(() => (text.trim() ? text.trim().split(/\s+/).length : 0), [text]);
 
-  // ---- API-kutsed ----
+  // -------- API-kutsed --------
   async function apiHumanize() {
     const r = await fetch("/api/humanize", {
       method: "POST",
@@ -59,7 +69,9 @@ export default function Humanizer() {
     return j.output || JSON.stringify(j, null, 2);
   }
   async function apiDetect() {
-    const r = await fetch("/api/detect/llm", {
+    // Kui kasutad mocki: "/api/detect"
+    // Kui päris OpenAI route: "/api/detect/llm"
+    const r = await fetch("/api/detect", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text }),
@@ -87,27 +99,16 @@ export default function Humanizer() {
     return JSON.stringify(j, null, 2);
   }
 
-  // Peamine nupp: ALATI Humanize
-  async function runHumanize() {
+  // käivita aktiivne tööriist
+  async function runSelected(tool: Tool = selected) {
     if (!text.trim()) return;
-    setIsLoading(true); setOut("");
-    try { setOut(await apiHumanize()); }
-    catch (e: any) { setOut(`Humanize error: ${e?.message || e}`); }
-    finally { setIsLoading(false); }
-  }
-
-  // More tools menüü valik: seab “selected” JA käivitab kohe tööriista
-  async function runFromMenu(tool: Tool) {
-    if (!text.trim()) { setSelected(tool); setMenuOpen(false); return; }
-    setSelected(tool);
-    setMenuOpen(false);
     setIsLoading(true); setOut("");
     try {
       const result =
-        tool === "detector" ? await apiDetect()
+        tool === "humanizer" ? await apiHumanize()
+        : tool === "detector" ? await apiDetect()
         : tool === "research" ? await apiResearch()
-        : tool === "plaglite" ? await apiPlagLite()
-        : await apiHumanize();
+        : await apiPlagLite();
       setOut(result);
     } catch (e: any) {
       setOut(`${TOOL_LABEL[tool]} error: ${e?.message || e}`);
@@ -116,6 +117,18 @@ export default function Humanizer() {
     }
   }
 
+  // valik rippmenüüst:
+  // 1) uuendab aktiivse tööriista
+  // 2) sulgeb menüü
+  // 3) kui tekst on olemas → KÄIVITAB KOHE analüüsi
+  async function onPick(tool: Tool) {
+    setSelected(tool);
+    setMenuOpen(false);
+    if (text.trim()) await runSelected(tool);
+  }
+
+  const primaryLabel = TOOL_LABEL[selected]; // püsinupp vahetab teksti vastavalt valikule
+
   return (
     <section className="mt-10 rounded-2xl bg-white/90 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-700 shadow-lg">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
@@ -123,9 +136,8 @@ export default function Humanizer() {
         <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
           <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
             <label htmlFor="input" className="font-semibold">Your Text</label>
-            {/* Valitud tööriista pill – nähtav alati */}
             <span className="text-xs px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
-              Selected: {TOOL_LABEL[selected]}
+              Selected: {TOOL_BADGE[selected]}
             </span>
           </div>
 
@@ -138,12 +150,12 @@ export default function Humanizer() {
               onChange={(e) => setText(e.target.value)}
             />
 
-            {/* Bottom bar: vasakul loendur; paremal More tools + Humanize */}
+            {/* Bottom bar */}
             <div className="mt-4 flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
               <div className="text-sm text-slate-500">{wordsUsed} / 2000 words</div>
 
               <div className="flex items-center gap-2">
-                {/* MORE TOOLS trigger */}
+                {/* MORE TOOLS */}
                 <div className="relative" ref={menuRef}>
                   <button
                     ref={triggerRef}
@@ -162,33 +174,47 @@ export default function Humanizer() {
                         "absolute right-0 z-30 w-72 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg p-2 " +
                         (openUp ? "bottom-full mb-2 origin-bottom-right" : "top-full mt-2 origin-top-right")
                       }
-                      style={{ maxHeight: 320, overflow: "auto" }} /* kui sisu on väga pikk */
+                      style={{ maxHeight: 320, overflow: "auto" }}
                     >
                       <div className="px-2 py-1 text-xs font-semibold text-slate-500">Tools</div>
 
                       <button
                         role="menuitemradio"
+                        aria-checked={selected === "humanizer"}
+                        className={`w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 ${
+                          selected === "humanizer" ? "font-semibold" : ""
+                        }`}
+                        onClick={() => onPick("humanizer")}
+                      >
+                        Humanizer (OpenAI)
+                      </button>
+                      <button
+                        role="menuitemradio"
                         aria-checked={selected === "detector"}
-                        className={`w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 ${selected === "detector" ? "font-semibold" : ""}`}
-                        onClick={() => runFromMenu("detector")}
+                        className={`w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 ${
+                          selected === "detector" ? "font-semibold" : ""
+                        }`}
+                        onClick={() => onPick("detector")}
                       >
                         Detect AI (OpenAI)
                       </button>
-
                       <button
                         role="menuitemradio"
                         aria-checked={selected === "research"}
-                        className={`w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 ${selected === "research" ? "font-semibold" : ""}`}
-                        onClick={() => runFromMenu("research")}
+                        className={`w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 ${
+                          selected === "research" ? "font-semibold" : ""
+                        }`}
+                        onClick={() => onPick("research")}
                       >
                         Research (Tavily + Brave)
                       </button>
-
                       <button
                         role="menuitemradio"
                         aria-checked={selected === "plaglite"}
-                        className={`w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 ${selected === "plaglite" ? "font-semibold" : ""}`}
-                        onClick={() => runFromMenu("plaglite")}
+                        className={`w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 ${
+                          selected === "plaglite" ? "font-semibold" : ""
+                        }`}
+                        onClick={() => onPick("plaglite")}
                       >
                         Plagiarism-lite (Brave)
                       </button>
@@ -207,15 +233,15 @@ export default function Humanizer() {
                   )}
                 </div>
 
-                {/* PEAMINE – ALATI HUMANIZE */}
+                {/* PRIMARY – muutub vastavalt valitud tööriistale */}
                 <button
-                  onClick={runHumanize}
+                  onClick={() => runSelected()}
                   disabled={isLoading || !text.trim()}
                   aria-busy={isLoading}
                   className="btn-primary disabled:opacity-60"
                   type="button"
                 >
-                  {isLoading ? "Working…" : "Humanize"}
+                  {isLoading ? "Working…" : primaryLabel}
                 </button>
               </div>
             </div>
@@ -226,12 +252,11 @@ export default function Humanizer() {
         <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
           <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
             <h3 className="font-semibold">Output</h3>
-            {/* Näitame valikut ka siin, et kasutaja alati teaks konteksti */}
             <span className="text-xs px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
-              Selected: {TOOL_LABEL[selected]}
+              Selected: {TOOL_BADGE[selected]}
             </span>
           </div>
-          <div className="p-4">
+          <div className="p-4" aria-live="polite">
             <div className="h-[360px] overflow-auto whitespace-pre-wrap">
               {isLoading ? (
                 <div className="flex h-full items-center justify-center text-slate-500">

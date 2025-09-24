@@ -7,6 +7,8 @@
 import { useEffect, useMemo, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { LanguageSwitch } from '@/components/LanguageSwitch';
+import DetectionResult from '@/components/DetectionResult';
+import { formatDetectionResponse } from '@/lib/formatDetection';
 
 function uid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -17,6 +19,7 @@ function AnalyzeClient() {
   const sp = useSearchParams();
   const lang = (sp.get('lang') ?? 'en') as 'en' | 'fi' | 'et';
   const [text, setText] = useState('');
+  const [detectionResult, setDetectionResult] = useState<any>(null);
 
   const t = useMemo(() => ({
     en: {
@@ -40,69 +43,102 @@ function AnalyzeClient() {
       clear: 'Tühjenda',
       note: 'Kohalik demo: sinu teksti töödeldakse ainult selles brauseris.',
     },
-  }[lang]), [lang]);
+  }), []);
 
   useEffect(() => {
-    const d = localStorage.getItem('authentica_last_draft');
-    if (d) setText(d);
-  }, []);
+    if (text) {
+      const timeout = setTimeout(() => {
+        fetch('/api/detect', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ text, lang }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            setDetectionResult(data);
+            router.replace(`/analyze?lang=${lang}&uid=${uid()}`);
+          });
+      }, 300);
 
-  function onAnalyze() {
-    const id = uid();
-    const payload = { id, lang, text, createdAt: Date.now() };
-    localStorage.setItem(`authentica_doc_${id}`, JSON.stringify(payload));
-    const histKey = 'authentica_text_history';
-    const history = JSON.parse(localStorage.getItem(histKey) || '[]') as string[];
-    history.unshift(text);
-    localStorage.setItem(histKey, JSON.stringify(history.slice(0, 10)));
-    localStorage.setItem('authentica_last_draft', text);
-    router.push(`/report/${id}?lang=${lang}`);
-  }
-
-  function onClear() {
-    setText('');
-    localStorage.removeItem('authentica_last_draft');
-  }
+      return () => clearTimeout(timeout);
+    } else {
+      setDetectionResult(null);
+    }
+  }, [text, lang, router]);
 
   return (
-    <main className="space-y-6">
-      <header className="flex items-center justify-between">
-        <h1 className="text-xl md:text-2xl font-semibold">{t.title}</h1>
+    <div className="flex min-h-screen flex-col items-center justify-center py-2">
+      <Suspense fallback={<div>Loading...</div>}>
         <LanguageSwitch />
-      </header>
+      </Suspense>
 
-      <textarea
-        className="w-full min-h-[280px] rounded-xl bg-slate-900 border border-slate-700 p-4 outline-none focus:ring-2 focus:ring-indigo-500"
-        placeholder={t.placeholder}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-      />
+      <main className="flex w-full flex-1 flex-col items-center justify-center px-20 text-center">
+        <h1 className="text-6xl font-bold">
+          {t[lang].title}
+        </h1>
 
-      <div className="flex gap-3">
-        <button
-          onClick={onAnalyze}
-          disabled={!text.trim()}
-          className="rounded-xl bg-indigo-500 px-5 py-3 font-medium hover:bg-indigo-600 disabled:opacity-50"
-        >
-          {t.analyze}
-        </button>
-        <button
-          onClick={onClear}
-          className="rounded-xl border border-slate-700 px-5 py-3 font-medium hover:bg-slate-800"
-        >
-          {t.clear}
-        </button>
-      </div>
+        <div className="mt-6 flex max-w-4xl flex-col gap-4">
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={t[lang].placeholder}
+            className="w-full rounded-md border-2 border-gray-300 p-4 text-lg focus:border-blue-500 focus:outline-none"
+            rows={10}
+          />
 
-      <p className="text-sm text-slate-400">{t.note}</p>
-    </main>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              onClick={() => setText('')}
+              className="rounded-md bg-red-500 px-4 py-2 text-white transition-all hover:bg-red-600"
+            >
+              {t[lang].clear}
+            </button>
+
+            <button
+              onClick={() => {
+                if (text) {
+                  fetch('/api/detect', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text, lang }),
+                  })
+                    .then((res) => res.json())
+                    .then((data) => setDetectionResult(data));
+                }
+              }}
+              className="rounded-md bg-blue-500 px-4 py-2 text-white transition-all hover:bg-blue-600"
+            >
+              {t[lang].analyze}
+            </button>
+          </div>
+        </div>
+
+        {detectionResult && (
+          <div className="mt-10 w-full max-w-4xl rounded-lg bg-white p-6 shadow-md">
+            <h2 className="text-2xl font-semibold">
+              Detection Result
+            </h2>
+
+            <div className="mt-4">
+              <DetectionResult
+                label={detectionResult.label}
+                score={detectionResult.score}
+                reasons={detectionResult.reasons}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="mt-10 text-sm text-gray-500">
+          {t[lang].note}
+        </div>
+      </main>
+    </div>
   );
 }
 
-export default function AnalyzePage() {
-  return (
-    <Suspense fallback={<main className="text-slate-400">Loading…</main>}>
-      <AnalyzeClient />
-    </Suspense>
-  );
-}
+export default AnalyzeClient;
