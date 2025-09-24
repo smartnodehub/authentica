@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 type Lang = { code: string; label: string; flag: string };
@@ -61,14 +62,20 @@ export default function Topbar() {
   return (
     <header className="sticky top-0 z-20 bg-white/80 dark:bg-slate-900/70 backdrop-blur border-b border-slate-200 dark:border-slate-800">
       <div className="mx-auto max-w-6xl h-16 px-4 sm:px-6 flex items-center justify-between">
-        {/* Logo vasakul */}
-        <div className="text-lg font-semibold">Authentica</div>
+        {/* Logo → viib alati "/" peale */}
+        <Link
+          href="/"
+          aria-label="Go to home"
+          className="text-lg font-semibold inline-flex items-center gap-2 px-2 py-1 rounded-md hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        >
+          Authentica
+        </Link>
 
         {/* Parempoolsed nupud */}
         <nav className="relative flex items-center gap-3 sm:gap-4">
           <a className="btn-ghost" href="/login" aria-label="Log in">Log in</a>
 
-          {/* Language = olemasolev nupp, nüüd dropdown-trigger + näitab valitud keelt lipuga */}
+          {/* Language dropdown */}
           <div className="relative" ref={menuRef}>
             <button
               className="btn-ghost"
@@ -105,7 +112,6 @@ export default function Topbar() {
           </div>
 
           <a className="btn-ghost" href="/pricing" aria-label="Pricing">Pricing</a>
-
           <button
             className="btn-accent"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
