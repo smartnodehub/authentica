@@ -43,14 +43,27 @@ html.dark .card {
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-.btn-primary {
-  @apply inline-flex items-center gap-2 rounded-xl px-5 py-3 font-semibold transition;
-  background: var(--accent2);
-  color: #111;
-  box-shadow: 0 0 8px var(--accent), 0 0 16px var(--accent2);
+/* Helekas rohekas gradient nagu näitel */
+.bg-app{
+  background:
+    radial-gradient(55% 60% at 50% 0%, rgba(16,185,129,0.18), transparent 70%),
+    radial-gradient(50% 40% at 0% 100%, rgba(234,179,8,0.12), transparent 60%),
+    #f6f8fb;
 }
-.btn-primary:hover {
-  filter: brightness(.96);
+
+/* Nupustiilid (ghost, primary, accent) – sümmeetrilised pillid */
+.btn-ghost{
+  @apply inline-flex items-center justify-center rounded-full px-4 py-2 text-sm
+         border border-slate-300 dark:border-slate-700 bg-white/70 dark:bg-slate-800/60
+         hover:bg-white hover:shadow transition;
+}
+.btn-primary{
+  @apply inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-medium
+         bg-emerald-600 text-white shadow hover:bg-emerald-700 transition;
+}
+.btn-accent{
+  @apply inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold
+         bg-lime-400 text-slate-900 shadow hover:bg-lime-300 transition;
 }
 
 /* numbrite pehme glow */
@@ -58,3 +71,12 @@ html.dark .card {
   color: var(--accent2);
   text-shadow: 0 0 3px rgba(159, 255, 0, .70), 0 0 6px rgba(159, 255, 0, .45), 0 0 10px rgba(159, 255, 0, .25);
 }
+
+/* Spinner */
+.spinner{
+  width: 18px; height: 18px; border-radius: 9999px;
+  border: 2px solid rgba(15,23,42,.15);
+  border-top-color: rgb(16,185,129);
+  animation: spin .8s linear infinite;
+}
+@keyframes spin{ to { transform: rotate(360deg); } }
